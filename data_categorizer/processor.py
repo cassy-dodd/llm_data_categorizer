@@ -1,5 +1,6 @@
 from ollama import chat
 from .prompter import Prompter
+from .validator import Validator
 import pandas as pd
 import json
 import time
@@ -89,62 +90,6 @@ class Processor:
         
         return text
     
-    def _validate_response(self, results):
-        """Validate that response meets requirements"""
-        errors = []
-        
-        # Check if results is a list
-        if not isinstance(results, list):
-            errors.append("Response must be a list")
-            return errors
-        
-        for idx, question in enumerate(results):
-            # Check if question is a dict
-            if not isinstance(question, dict):
-                errors.append(f"Question {idx}: must be a dictionary")
-                continue
-            
-            # Check question has single category (string, not list)
-            q_cats = question.get("question_categories", "")
-            if isinstance(q_cats, list):
-                errors.append(f"Question {idx}: question_categories must be a single string, not a list")
-            elif not q_cats:
-                errors.append(f"Question {idx}: missing question_categories")
-            
-            # Check answers exist and are valid
-            answers = question.get("answers", [])
-            if not answers:
-                errors.append(f"Question {idx}: no answers provided")
-                continue
-            
-            if not isinstance(answers, list):
-                errors.append(f"Question {idx}: answers must be a list")
-                continue
-            
-            for ans_idx, answer in enumerate(answers):
-                # Check if answer is a dict
-                if not isinstance(answer, dict):
-                    errors.append(f"Question {idx}, Answer {ans_idx}: must be a dictionary")
-                    continue
-                
-                # Check answer has categories
-                ans_cats = answer.get("answer_categories", [])
-                if not ans_cats or (isinstance(ans_cats, list) and len(ans_cats) == 0):
-                    errors.append(f"Question {idx}, Answer {ans_idx}: missing answer_categories")
-                
-                # Check answer has values
-                ans_vals = answer.get("answer_value", [])
-                if not ans_vals or (isinstance(ans_vals, list) and len(ans_vals) == 0):
-                    errors.append(f"Question {idx}, Answer {ans_idx}: missing answer_value")
-                
-                # Ensure answer_categories and answer_value are lists
-                if ans_cats and not isinstance(ans_cats, list):
-                    errors.append(f"Question {idx}, Answer {ans_idx}: answer_categories must be a list")
-                if ans_vals and not isinstance(ans_vals, list):
-                    errors.append(f"Question {idx}, Answer {ans_idx}: answer_value must be a list")
-        
-        return errors
-    
     def _process_chunk_with_retry(self, chunk):
         """Process chunk with retry logic"""
         for attempt in range(self.MAX_RETRY_COUNT):
@@ -159,7 +104,7 @@ class Processor:
                 json_text = self._extract_json(response_text)
                 results = json.loads(json_text)
                 
-                validation_errors = self._validate_response(results)
+                validation_errors = Validator(results).call()
                 if validation_errors:
                     print(f"Validation errors on attempt {attempt + 1}:")
                     for error in validation_errors:
@@ -185,5 +130,5 @@ class Processor:
     
     def _export_csv(self, output_rows):
         output_df = pd.DataFrame(output_rows)
-        output_df.to_csv("survey_categorized5.csv", index=False)
-        print("✅ CSV saved: survey_categorized5.csv")
+        output_df.to_csv(self.output_file, index=False)
+        print(f"✅ CSV saved: {self.output_file}")

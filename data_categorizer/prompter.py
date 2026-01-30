@@ -13,7 +13,7 @@ class Prompter:
         4. Each answer MUST have at least one category and one value (can be a list)
         5. Translate German terms to English (e.g., Haarausfall → hair_loss)
         6. For questions, summarize the main semantic meaning of the string into a category
-        7. Within answers array, 'operand' is the user facing answer.
+        7. Within answers array, 'operand' is the user-facing answer
         
         JSON Format (follow exactly):
         [
@@ -31,12 +31,15 @@ class Prompter:
         ]
         
         CATEGORIZATION RULES:
-        - Question categories: (example cateogries) smoking, alcohol, exercise, diet, sleep, stress, medication, medical_history, demographics, symptoms, bmi, instruction, acknowledgement, consent
-        - Answer categories: (example cateogries) frequency, quantity, severity, duration, boolean, scale, N/A
-        - Answer values: (example values) low/medium/high, often/sometimes/rarely/never, true/false, mild/moderate/severe, none, 0-10
+        - Question categories (examples): smoking, alcohol, exercise, diet, sleep, stress, medication, medical_history, demographics, symptoms, bmi, instruction, acknowledgement, consent
+        - Answer categories (examples): frequency, quantity, severity, duration, boolean, scale, range, N/A
+        - Answer values (examples): low/medium/high, often/sometimes/rarely/never, true/false, mild/moderate/severe, daily/weekly/monthly, none, 0-10
 
         GOAL:
-        - the aim is to be able to categorize this data into meaningful, measurable buckets and to exclude those which are not measurable via dfferent categories such as N/A.
+        - The aim is to categorize this data into meaningful buckets. Question categories should capture the main meaning of the question.
+        - For example, questions asking about erectile dysfunction should have the category "erectile_dysfunction".
+        - Any question relating to smoking should have the category "smoking".
+        - Combined with answer_values and answer_categories, this will help interpret the data effectively.
         
         EXAMPLES:
         Question: "Rauchen Sie?" → question_categories: "smoking"
@@ -63,7 +66,7 @@ class Prompter:
                         answer_texts.append(operand)
                 
                 if answer_texts:
-                    prompt += f"Question: \"{row['question_text']}\"\nAnswers: {answer_texts}\n\n"
+                    prompt_text += f"Question: \"{row['question_text']}\"\nAnswers: {answer_texts}\n\n"
             except (json.JSONDecodeError, KeyError):
                 print(f"Skipping row {i} due to parsing error")
                 continue
